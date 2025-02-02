@@ -1,5 +1,6 @@
 import pygame
 from config import WHITE, SCALE_FACTOR, WATER_BLUE, FIRE_RED, EARTH_GREEN
+from config.assets import TOWER_IMAGES  # Додаємо імпорт зображень
 
 # Характеристики веж
 TOWER_PROPERTIES = {
@@ -70,21 +71,17 @@ class Tower:
         return closest_enemy
         
     def draw(self, screen, selected=False):
-        color = self.properties['color']
-        pygame.draw.circle(screen, color, 
-                         (int(self.position[0]), int(self.position[1])), 
-                         int(self.size))
+        # Малюємо зображення вежі замість кола
+        image = TOWER_IMAGES[self.type][self.level]
+        image_rect = image.get_rect(center=self.position)
+        screen.blit(image, image_rect)
         
-        # Малюємо рівень вежі
-        level_text = pygame.font.Font(None, int(20 * SCALE_FACTOR)).render(str(self.level), True, WHITE)
-        level_rect = level_text.get_rect(center=self.position)
-        screen.blit(level_text, level_rect)
-        
+        # Малюємо радіус дії якщо вежа вибрана
         if selected:
-            pygame.draw.circle(screen, color, 
+            pygame.draw.circle(screen, WHITE, 
                              (int(self.position[0]), int(self.position[1])), 
-                             int(self.properties['range'] * SCALE_FACTOR), 
-                             1)
+                             int(self.properties['range']), 
+                             2)
     
     def upgrade(self):
         if self.level < 3:

@@ -1,12 +1,13 @@
 import pygame
 from config import BROWN, GREEN, RED, BLUE, SCALE_FACTOR, YELLOW, PURPLE
+from config.assets import ENEMY_IMAGES
 
 class Enemy:
     # Типи ворогів та їх характеристики
     ENEMY_TYPES = {
         'normal': {
             'health': 100,
-            'speed': 20,
+            'speed': 2,
             'size': 30,
             'color': BROWN,
             'reward': 10
@@ -81,10 +82,10 @@ class Enemy:
         return self.health <= 0
         
     def draw(self, screen):
-        # Малюємо ворога
-        pygame.draw.circle(screen, self.color, 
-                         (int(self.position[0]), int(self.position[1])), 
-                         int(self.size))
+        # Малюємо зображення ворога
+        image = ENEMY_IMAGES[self.type]
+        image_rect = image.get_rect(center=self.position)
+        screen.blit(image, image_rect)
         
         # Малюємо полоску здоров'я
         health_width = 40 * SCALE_FACTOR
@@ -92,10 +93,8 @@ class Enemy:
         health_x = self.position[0] - health_width/2
         health_y = self.position[1] - self.size - health_height - 5
         
-        # Фон полоски здоров'я
         pygame.draw.rect(screen, RED, 
                         (health_x, health_y, health_width, health_height))
-        # Поточне здоров'я
         current_health_width = (self.health/self.max_health) * health_width
         pygame.draw.rect(screen, GREEN, 
                         (health_x, health_y, current_health_width, health_height)) 
