@@ -96,3 +96,13 @@ class Tower:
             self.upgrade_cost *= 2
             return True
         return False 
+
+    def get_total_cost(self):
+        """Розраховує повну вартість вежі з урахуванням покращень"""
+        base = self.base_cost
+        if self.level == 2:
+            base += self.base_cost * 0.5  # Перше покращення
+        elif self.level == 3:
+            base += self.base_cost * 0.5  # Перше покращення
+            base += self.base_cost        # Друге покращення
+        return base 

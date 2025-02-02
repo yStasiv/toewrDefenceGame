@@ -6,7 +6,7 @@ class Enemy:
     ENEMY_TYPES = {
         'normal': {
             'health': 100,
-            'speed': 2,
+            'speed': 20,
             'size': 30,
             'color': BROWN,
             'reward': 10
