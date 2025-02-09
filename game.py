@@ -9,11 +9,10 @@ from entities.projectile import Projectile
 from entities.coin import Coin
 from ui.menu import Menu
 import random
-from ui.game_over_screen import GameOverScreen  # Замість from screens.game_over_screen import GameOverScreen
 from entities.pet import Pet
 from entities.carrot import Carrot
 from config.assets import CASTLE_IMAGES, CASTLE_IMAGES, UI_IMAGES, CARROT_IMAGE, TOWER_IMAGES, PET_IMAGES
-from config.sounds import play_sound  # Додаємо імпорт
+from config.sounds import play_sound, play_music, stop_music  # Додаємо імпорт
 
 class Game:
     def __init__(self):
@@ -37,7 +36,7 @@ class Game:
             (SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.4),
             (SCREEN_WIDTH * 0.7, SCREEN_HEIGHT * 0.4),
             (SCREEN_WIDTH * 0.7, SCREEN_HEIGHT * 0.2),
-            (SCREEN_WIDTH, SCREEN_HEIGHT * 0.2)
+            (SCREEN_WIDTH - 50, SCREEN_HEIGHT * 0.2)  # Кінець шляху
         ]
         
         # Точки для веж
@@ -60,10 +59,12 @@ class Game:
         self.top_ui_height = 40 * SCALE_FACTOR
         self.ui_height = SCREEN_HEIGHT * 0.15
         self.ui_y = SCREEN_HEIGHT - self.ui_height
+        self.ui_font_small = pygame.font.Font(None, int(18 * SCALE_FACTOR))
         self.ui_font = pygame.font.Font(None, int(36 * SCALE_FACTOR))
+        # self.ui_font_large = pygame.font.Font(None, int(48 * SCALE_FACTOR))  # Поки не потрібно
         
         # Гроші та вибрані об'єкти
-        self.money = 1000
+        self.money = 300
         self.selected_tower = None
         self.selected_type = None
         self.game_time = 0
@@ -98,7 +99,7 @@ class Game:
             self.record_level = 1
         
         # Додаємо параметри замку
-        self.castle_position = (SCREEN_WIDTH, SCREEN_HEIGHT * 0.2)  # Кінець шляху
+        self.castle_position = (SCREEN_WIDTH - 50, SCREEN_HEIGHT * 0.12)  # Кінець шляху
         self.castle_size = 60 * SCALE_FACTOR
         self.castle_max_health = 100
         self.castle_health = self.castle_max_health
@@ -131,7 +132,7 @@ class Game:
         
         # Кнопки для улюbленців
         self.pet_buttons = []
-        for i, p_type in enumerate(['fast', 'strong', 'guard']):
+        for i, p_type in enumerate(['rabbit', 'dog', 'dragon']):
             button_x = SCREEN_WIDTH - (3 - i) * 100 * SCALE_FACTOR
             self.pet_buttons.append({
                 'rect': pygame.Rect(button_x, self.ui_y + 60, 80 * SCALE_FACTOR, 40 * SCALE_FACTOR),
@@ -147,6 +148,25 @@ class Game:
                 self.total_carrots_collected = int(f.read())
         except:
             self.total_carrots_collected = 0
+        
+        # Додаємо параметри для випливаючого меню улюbленців
+        self.pet_menu_expanded = False
+        self.pet_menu_position = 0  # 0 - закрите, 1 - відкрите
+        self.pet_menu_width = 300 * SCALE_FACTOR
+        
+        # Кнопка-стрілка
+        arrow_size = 30 * SCALE_FACTOR
+        self.arrow_button = pygame.Rect(
+            SCREEN_WIDTH - arrow_size - 30,
+            SCREEN_HEIGHT - arrow_size - 40,
+            arrow_size,
+            arrow_size
+        )
+        
+        # Додаємо параметр для контролю музики
+        self.music_playing = True
+        # Запускаємо музику меню
+        play_music('menu')
 
     def draw_path(self):
         if len(self.path_points) > 1:
@@ -211,24 +231,22 @@ class Game:
         for button in self.tower_buttons:
             # Якщо вибрана, малюємо підсвічування
             if self.selected_type == button['type']:
-                screen.blit(UI_IMAGES['selected_button_bg'], 
-                           (button['rect'].x - 5, button['rect'].y - 5))
+                screen.blit(TOWER_IMAGES[button['type']]['bg'], button['rect'])
             
-            # Малюємо фон кнопки
-            screen.blit(UI_IMAGES['tower_button_bg'], button['rect'])
             # Малюємо зображення вежі
-            screen.blit(TOWER_IMAGES[button['type']][1], button['rect'])
+            screen.blit(TOWER_IMAGES[button['type']][0], button['rect'])
             
-            # Додаємо текст типу вежі
-            type_text = self.ui_font.render(button['type'].title(), True, WHITE)
-            text_rect = type_text.get_rect(center=button['rect'].center)
-            screen.blit(type_text, text_rect)
+            # Додамо для навчання(щоб було зрозуміло що це за вежа)
+            # type_text = self.ui_font.render(button['type'].title(), True, WHITE)
+            # text_rect = type_text.get_rect(center=button['rect'].center)
+            # screen.blit(type_text, text_rect)
             
             # Додаємо вартість
             cost = TOWER_PROPERTIES[button['type']]['cost']
-            cost_text = self.ui_font.render(f'{cost}', True, WHITE)
-            cost_rect = cost_text.get_rect(center=(button['rect'].centerx, 
-                                                 button['rect'].bottom + 20))
+            cost_text = self.ui_font_small.render(f'{cost}', True, WHITE)
+            cost_rect = cost_text.get_rect(center=button['rect'].center)
+            cost_rect.x += 20  # Посуваємо текст вліво на 20 пікселів
+
             screen.blit(cost_text, cost_rect)
         
         # Малюємо інформацію про вибрану вежу та кнопки
@@ -267,42 +285,41 @@ class Game:
             text_rect = sell_text.get_rect(center=self.sell_button.center)
             screen.blit(sell_text, text_rect)
         
-        # Малюємо кнопки улюbленців з більшими відступами
-        pet_section_start = SCREEN_WIDTH * 0.6  # Починаємо з 60% ширини екрану
-        for i, button in enumerate(self.pet_buttons):
-            # Оновлюємо позицію кнопки
-            button['rect'].x = pet_section_start + i * 150 * SCALE_FACTOR
-            
-            if button['type'] in self.pets:
-                screen.blit(UI_IMAGES['selected_button_bg'], 
-                           (button['rect'].x - 5, button['rect'].y - 5))
-            
-            screen.blit(UI_IMAGES['pet_button_bg'], button['rect'])
-            screen.blit(PET_IMAGES[button['type']], button['rect'])
-            
-            # Додаємо текст назви улюbленця
-            pet_name = Pet.PET_TYPES[button['type']]['name']
-            type_text = self.ui_font.render(pet_name, True, WHITE)
-            text_rect = type_text.get_rect(center=(button['rect'].centerx, 
-                                                 button['rect'].bottom + 15))
-            screen.blit(type_text, text_rect)
-            
-            # Додаємо вартість або статус нижче
-            if button['type'] in self.pets:
-                if self.level == self.last_pet_switch_level:
-                    status_text = "Заблоковано"
-                else:
-                    status_text = "Куплено"
-            else:
-                if self.level == self.last_pet_switch_level:
-                    status_text = "Заблоковано"
-                else:
-                    status_text = str(Pet.PET_TYPES[button['type']]['cost'])
-            
-            status_text = self.ui_font.render(status_text, True, WHITE)
-            status_rect = status_text.get_rect(center=(button['rect'].centerx, 
-                                                     button['rect'].bottom + 40))
-            screen.blit(status_text, status_rect)
+        # Малюємо горизонтальне випливаюче меню улюbленців
+        menu_width = self.pet_menu_width * self.pet_menu_position
+        menu_rect = pygame.Rect(
+            SCREEN_WIDTH - menu_width,  # Починаємо з правого краю
+            SCREEN_HEIGHT - 200 * SCALE_FACTOR,
+            menu_width,
+            200 * SCALE_FACTOR
+        )
+        pygame.draw.rect(screen, (200, 200, 200), menu_rect)
+        
+        # Малюємо кнопки улюbленців горизонтально
+        if self.pet_menu_position > 0:
+            for i, button in enumerate(self.pet_buttons):
+                # Оновлюємо позицію кнопок для горизонтального розміщення справа
+                button['rect'].x = menu_rect.right - ((3 - i) * 100 * SCALE_FACTOR)
+                button['rect'].y = menu_rect.y + 20
+                
+                if button['type'] in self.pets:
+                    screen.blit(UI_IMAGES['selected_button_bg'], 
+                               (button['rect'].x - 5, button['rect'].y - 5))
+                
+                screen.blit(UI_IMAGES['pet_button_bg'], button['rect'])
+                screen.blit(PET_IMAGES[button['type']], button['rect'])
+                
+                # Додаємо ціну улюbленця
+                pet_name = str(Pet.PET_TYPES[button['type']]['cost'])
+                type_text = self.ui_font.render(pet_name, True, WHITE)
+                text_rect = type_text.get_rect(
+                    midtop=(button['rect'].centerx, button['rect'].bottom + 5)
+                )
+                screen.blit(type_text, text_rect)
+        
+        # Малюємо кнопку-стрілку
+        arrow_image = UI_IMAGES['open_pet_store'] if not self.pet_menu_expanded else UI_IMAGES['close_pet_store']
+        screen.blit(arrow_image, self.arrow_button)
 
     def handle_tower_placement(self, pos):
         for spot in self.tower_spots:
@@ -323,7 +340,14 @@ class Game:
 
     def update_projectiles(self):
         for proj in self.projectiles[:]:
-            if proj.move():
+            # Шукаємо ворога, в якого цілився снаряд
+            target_pos = None
+            for enemy in self.enemies:
+                if enemy.position == proj.target_pos:  # Змінено з target на target_pos
+                    target_pos = enemy.position
+                    break
+                
+            if proj.move(target_pos):  # Передаємо нову позицію цілі
                 self.projectiles.remove(proj)
 
     def update_towers(self, current_time):
@@ -336,6 +360,30 @@ class Game:
                         Projectile(tower.position, enemy.position, 
                                  tower.properties['damage'])
                     )
+        
+        # Оновлюємо активного улюбленця
+        if self.active_pet:
+            if self.active_pet.type == 'dragon':
+                # Логіка дракона
+                self.active_pet.position = [self.castle_position[0] - 50, self.castle_position[1]]
+                if self.active_pet.can_shoot(current_time):
+                    # Спочатку намагаємось знищити морквинки
+                    for carrot in self.carrots[:]:
+                        self.projectiles.append(
+                            Projectile(self.active_pet.position, carrot.position, self.active_pet.damage)
+                        )
+                        self.carrots.remove(carrot)
+                        self.active_pet.last_shot_time = current_time
+                        play_sound('carrot_destroy')
+                        break
+                    else:
+                        # Якщо морквинок немає, стріляємо по ворогах
+                        if self.enemies:
+                            target = self.enemies[0]  # Стріляємо в першого ворога
+                            self.projectiles.append(
+                                Projectile(self.active_pet.position, target.position, self.active_pet.damage)
+                            )
+                            self.active_pet.last_shot_time = current_time
 
     def check_projectile_collisions(self):
         """Перевіряє зіткнення снарядів з ворогами"""
@@ -444,6 +492,10 @@ class Game:
             len(self.enemies) == 0):
             play_sound('level_complete')  # Додаємо звук при завершенні рівня
             self.level += 1
+            
+            # Очищуємо всі снаряди при завершенні рівня
+            self.projectiles.clear()
+            
             # Оновлюємо рекорд якщо потрібно
             if self.level > self.record_level:
                 self.record_level = self.level
@@ -470,14 +522,16 @@ class Game:
         # Визначаємо який стан замку показувати
         health_percent = (self.castle_health / self.castle_max_health) * 100
         
-        if health_percent > 80:
+        if health_percent > 70:
             castle_image = CASTLE_IMAGES[100]
         elif health_percent > 50:
-            castle_image = CASTLE_IMAGES[80]
-        elif health_percent > 25:
+            castle_image = CASTLE_IMAGES[75]
+        elif health_percent > 30:
             castle_image = CASTLE_IMAGES[50]
+        elif health_percent > 20:
+            castle_image = CASTLE_IMAGES[30]
         elif health_percent > 10:
-            castle_image = CASTLE_IMAGES[25]
+            castle_image = CASTLE_IMAGES[20]
         else:
             castle_image = CASTLE_IMAGES[10]
         
@@ -555,6 +609,14 @@ class Game:
         
         return menu_button  # Повертаємо rect кнопки для обробки кліків
 
+    def update(self):
+        # Оновлюємо позицію меню
+        target_position = 1.0 if self.pet_menu_expanded else 0.0
+        if self.pet_menu_position < target_position:
+            self.pet_menu_position = min(self.pet_menu_position + 0.1, target_position)
+        elif self.pet_menu_position > target_position:
+            self.pet_menu_position = max(self.pet_menu_position - 0.1, target_position)
+
     def run(self):
         while True:
             current_time = time.get_ticks() / 1000.0
@@ -566,53 +628,74 @@ class Game:
                     sys.exit()
                 
                 if e.type == MOUSEBUTTONDOWN:
-                    if self.current_screen == 'menu':
-                        action = self.menu.handle_click(e.pos)
-                        if action == 'start':
-                            self.current_screen = 'game'
-                            self.game_time = 0
-                            self.enemies = [Enemy(self.path_points)]
-                            self.enemies_spawned = 0
-                            self.enemies_killed = 0
-                            self.paused = False
-                        elif action == 'settings':
-                            pass
-                        elif action == 'quit':
-                            pygame.quit()
-                            sys.exit()
-                    elif self.current_screen == 'game_over':
-                        menu_button = self.draw_game_over_screen()
-                        if menu_button.collidepoint(e.pos):
-                            self.current_screen = 'menu'
-                            self.__init__()
-                    elif self.current_screen == 'game':
+                    if self.current_screen == 'game':
+                        # Спочатку перевіряємо клік по монетках (завжди активно)
+                        for coin in self.coins[:]:
+                            dx = e.pos[0] - coin.position[0]
+                            dy = e.pos[1] - coin.position[1]
+                            if (dx**2 + dy**2)**0.5 < coin.size:
+                                self.money += coin.value
+                                self.coins.remove(coin)
+                                play_sound('coin_pickup')
+                                continue
+                        
+                        # Перевіряємо кліки по кнопках меню та паузи (завжди активні)
                         if self.menu_button.collidepoint(e.pos):
                             self.current_screen = 'menu'
-                        elif self.pause_button.collidepoint(e.pos):
+                            stop_music()  # Зупиняємо музику гри
+                            play_music('menu')  # Запускаємо музику меню
+                            self.__init__()
+                            continue
+                        
+                        if self.pause_button.collidepoint(e.pos):
                             self.paused = not self.paused
-                        else:
-                            # Перевіряємо клік по монетках
-                            for coin in self.coins[:]:
-                                dx = e.pos[0] - coin.position[0]
-                                dy = e.pos[1] - coin.position[1]
-                                if (dx**2 + dy**2)**0.5 < coin.size:
-                                    self.money += coin.value
-                                    self.coins.remove(coin)
-                                    play_sound('coin_pickup')  # Додаємо звук підбирання монетки
-                                    continue
-                            
-                            # Перевіряємо клік по кнопці покращення
-                            if (self.selected_tower and 
-                                self.upgrade_button.collidepoint(e.pos)):
-                                # Перевіряємо чи можна покращити вежу
+                            continue
+                        
+                        # Перевіряємо кліки по кнопках покращення/продажу, якщо вежа вибрана
+                        if self.selected_tower:
+                            if self.upgrade_button.collidepoint(e.pos):
                                 if (self.selected_tower.level < 3 and 
                                     self.money >= self.selected_tower.upgrade_cost):
-                                    # Знімаємо гроші тільки якщо покращення успішне
                                     upgrade_cost = self.selected_tower.upgrade_cost
                                     if self.selected_tower.upgrade():
                                         self.money -= upgrade_cost
+                                        continue
                             
-                            # Перевіряємо клік по кнопках вибору типу вежі
+                            if self.sell_button.collidepoint(e.pos):
+                                sell_price = int(self.selected_tower.get_total_cost() * 0.8)
+                                self.money += sell_price
+                                self.towers.remove(self.selected_tower)
+                                self.selected_tower = None
+                                play_sound('tower_sell')
+                                continue
+                        
+                        # Далі обробляємо кліки по меню улюбленців та вежах
+                        if self.arrow_button.collidepoint(e.pos):
+                            self.pet_menu_expanded = not self.pet_menu_expanded
+                            play_sound('menu_click')  # TODO: Додати звук
+                            # Скидаємо вибір типу вежі при відкритті/закритті меню
+                            self.selected_type = None
+                            self.selected_tower = None
+                        elif self.pet_menu_expanded and self.pet_menu_position > 0.9:  # Перевіряємо що меню повністю відкрите
+                            # Обробляємо кліки по кнопках улюbленців
+                            for button in self.pet_buttons:
+                                if button['rect'].collidepoint(e.pos):
+                                    pet_type = button['type']
+                                    if pet_type in self.pets:
+                                        if self.level > self.last_pet_switch_level:
+                                            self.active_pet = self.pets[pet_type]
+                                            self.last_pet_switch_level = self.level
+                                    else:
+                                        pet_cost = Pet.PET_TYPES[pet_type]['cost']
+                                        if self.money >= pet_cost and self.level > self.last_pet_switch_level:
+                                            new_pet = Pet((SCREEN_WIDTH/2, SCREEN_HEIGHT/2), pet_type)
+                                            self.pets[pet_type] = new_pet
+                                            self.active_pet = new_pet
+                                            self.money -= pet_cost
+                                            self.last_pet_switch_level = self.level
+                                    break
+                        elif not self.pet_menu_expanded and self.pet_menu_position < 0.1:
+                            # Обробка кліків по вежах та інших елементах
                             for button in self.tower_buttons:
                                 if button['rect'].collidepoint(e.pos):
                                     self.selected_type = button['type']
@@ -631,36 +714,27 @@ class Game:
                             # Спроба встановити нову вежу
                             if self.selected_type:
                                 self.handle_tower_placement(e.pos)
-                            
-                            # Перевіряємо клік по кнопці продажу
-                            if (self.selected_tower and 
-                                self.sell_button.collidepoint(e.pos)):
-                                play_sound('tower_sell')  # Додаємо звук продажу вежі
-                                # Продаємо вежу за 80% вартості
-                                sell_price = int(self.selected_tower.get_total_cost() * 0.8)
-                                self.money += sell_price
-                                self.towers.remove(self.selected_tower)
-                                self.selected_tower = None
-                            
-                            # Перевіряємо клік по кнопках улюbленців
-                            for button in self.pet_buttons:
-                                if button['rect'].collidepoint(e.pos):
-                                    pet_type = button['type']
-                                    if pet_type in self.pets:
-                                        # Якщо улюbленець вже куплений, перемикаємось на нього
-                                        if self.level > self.last_pet_switch_level:
-                                            self.active_pet = self.pets[pet_type]
-                                            self.last_pet_switch_level = self.level
-                                    else:
-                                        # Купуємо нового улюbленця
-                                        pet_cost = Pet.PET_TYPES[pet_type]['cost']
-                                        if self.money >= pet_cost and self.level > self.last_pet_switch_level:
-                                            new_pet = Pet((SCREEN_WIDTH/2, SCREEN_HEIGHT/2), pet_type)
-                                            self.pets[pet_type] = new_pet
-                                            self.active_pet = new_pet
-                                            self.money -= pet_cost
-                                            self.last_pet_switch_level = self.level  # Блокуємо зміну після покупки
-                                    break
+                    elif self.current_screen == 'menu':
+                        action = self.menu.handle_click(e.pos)
+                        if action == 'start':
+                            self.current_screen = 'game'
+                            stop_music()  # Зупиняємо музику меню
+                            play_music('game')  # Запускаємо музику гри
+                            self.game_time = 0
+                            self.enemies = [Enemy(self.path_points)]
+                            self.enemies_spawned = 0
+                            self.enemies_killed = 0
+                            self.paused = False
+                        elif action == 'settings':
+                            pass
+                        elif action == 'quit':
+                            pygame.quit()
+                            sys.exit()
+                    elif self.current_screen == 'game_over':
+                        menu_button = self.draw_game_over_screen()
+                        if menu_button.collidepoint(e.pos):
+                            self.current_screen = 'menu'
+                            self.__init__()
 
             if self.current_screen == 'game' and not self.paused:
                 # Перевіряємо чи триває затримка перед рівнем
@@ -772,5 +846,7 @@ class Game:
                     carrot.draw(screen)
             elif self.current_screen == 'game_over':
                 self.draw_game_over_screen()
+
+            self.update()  # Додайте цей виклик для оновлення анімації
 
             pygame.display.flip() 

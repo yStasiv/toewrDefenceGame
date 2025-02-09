@@ -1,18 +1,13 @@
 import pygame
-import random
-from config import ORANGE, SCALE_FACTOR
+from config.assets import CARROT_IMAGE,  SCALE_FACTOR
 
 class Carrot:
     def __init__(self, position):
         self.position = list(position)
         self.size = 15 * SCALE_FACTOR
         self.collected = False
+        self.image = CARROT_IMAGE
         
     def draw(self, screen):
-        # Малюємо морквину (спрощено як помаранчевий трикутник)
-        points = [
-            (self.position[0], self.position[1] - self.size),
-            (self.position[0] - self.size/2, self.position[1] + self.size/2),
-            (self.position[0] + self.size/2, self.position[1] + self.size/2)
-        ]
-        pygame.draw.polygon(screen, ORANGE, points) 
+        image_rect = self.image.get_rect(center=self.position)
+        screen.blit(self.image, image_rect) 

@@ -31,14 +31,14 @@ class Enemy:
             'speed': 1.5,
             'size': 50,
             'color': PURPLE,
-            'reward': 50
+            'reward': 100
         },
         'swarm': {
             'health': 50,
             'speed': 5,
             'size': 20,
             'color': YELLOW,
-            'reward': 20
+            'reward': 25
         }
     }
 

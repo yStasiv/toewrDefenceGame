@@ -26,7 +26,11 @@ SOUNDS = {
     
     # Звуки рівнів
     'level_complete': load_sound('resources/sounds/tower_buy.wav'),
-    'game_over': load_sound('resources/sounds/tower_buy.wav')
+    'game_over': load_sound('resources/sounds/tower_buy.wav'),
+    
+    # Інші звуки
+    'tower_place': load_sound('resources/sounds/tower_buy.wav'),
+    'menu_click': load_sound('resources/sounds/tower_buy.wav'),
 }
 
 # Налаштовуємо гучність для кожного звуку
@@ -40,7 +44,9 @@ VOLUME = {
     'carrot_pickup': 0.6,
     'carrot_destroy': 0.6,
     'level_complete': 1.0,
-    'game_over': 1.0
+    'game_over': 1.0,
+    'tower_place': 0.7,
+    'menu_click': 0.7,
 }
 
 # Встановлюємо гучність для кожного звуку
@@ -63,4 +69,19 @@ def toggle_sound():
 
 def get_sound_state():
     """Повертає поточний стан звуку"""
-    return sound_enabled 
+    return sound_enabled
+
+# Фонова музика
+MUSIC = {
+    'menu': 'resources/sounds/music/menu_music.mp3',
+    'game': 'resources/sounds/music/game_music.mp3',
+}
+
+def play_music(music_name):
+    if music_name in MUSIC:
+        pygame.mixer.music.set_volume(0.05)  # Значення від 0.0 до 1.0 
+        pygame.mixer.music.load(MUSIC[music_name])
+        pygame.mixer.music.play(-1)  # -1 означає безкінечне повторення
+
+def stop_music():
+    pygame.mixer.music.stop() 

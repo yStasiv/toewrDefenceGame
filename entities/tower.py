@@ -9,21 +9,21 @@ TOWER_PROPERTIES = {
         'damage': 10, 
         'range': 150, 
         'cost': 100,
-        'name': 'Водяна'
+        'name': 'Water Tower'
     },
     'fire': {
         'color': FIRE_RED, 
         'damage': 15, 
         'range': 100, 
         'cost': 150,
-        'name': 'Вогняна'
+        'name': 'Fire Tower'
     },
     'earth': {
         'color': EARTH_GREEN, 
         'damage': 8, 
         'range': 200, 
         'cost': 120,
-        'name': 'Земляна'
+        'name': 'Earth Tower'
     }
 }
 

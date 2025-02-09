@@ -4,37 +4,39 @@ from config.assets import PET_IMAGES
 
 class Pet:
     PET_TYPES = {
-        'fast': {
+        'rabbit': {
             'speed': 10,
             'size': 15,
             'color': YELLOW,
-            'cost': 300,
+            'cost': 500,
             'name': 'Швидкий збирач',
             'can_collect_carrots': False,
             'can_collect_coins': True,
             'can_attack': False
         },
-        'strong': {
+        'dog': {
             'speed': 4,
             'size': 25,
             'color': BLUE,
-            'cost': 200,
+            'cost': 300,
             'name': 'Надійний збирач',
             'can_collect_carrots': True,
             'can_collect_coins': True,
             'can_attack': False
         },
-        'guard': {
+        'dragon': {
             'speed': 0,  # Не рухається
             'size': 20,
             'color': RED,
-            'cost': 400,
+            'cost': 1000,
             'name': 'Охоронець',
             'can_collect_carrots': False,
             'can_collect_coins': False,
             'can_attack': True,
             'damage': 30,
-            'attack_delay': 1.0  # Секунд між пострілами
+            'attack_delay': 1.0,  # Секунд між пострілами
+            'range': 10,  # TODO: не робе поки шо
+            'shoot_delay': 1.0
         }
     }
 
