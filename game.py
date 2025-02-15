@@ -21,7 +21,7 @@ class Game:
         self.current_screen = 'menu'
         
         # Додаємо змінні для керування ворогами
-        self.enemies_per_level = 10  # Фіксована кількість ворогів на рівень
+        self.enemies_per_level = 5  # Фіксована кількість ворогів на рівень
         self.enemies_spawned = 0     # Скільки ворогів вже з'явилось
         self.enemies_processed = 0    # Скільки ворогів або знищено, або дійшло до замку
         self.level = 1
@@ -31,21 +31,27 @@ class Game:
         
         # Точки шляху для ворогів
         self.path_points = [
-            (0, SCREEN_HEIGHT * 0.8),
-            (SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.8),
-            (SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.4),
-            (SCREEN_WIDTH * 0.7, SCREEN_HEIGHT * 0.4),
-            (SCREEN_WIDTH * 0.7, SCREEN_HEIGHT * 0.2),
+            (0, SCREEN_HEIGHT * 0.85),
+            (SCREEN_WIDTH * 0.2, SCREEN_HEIGHT * 0.85),
+            (SCREEN_WIDTH * 0.2, SCREEN_HEIGHT * 0.6),
+            (SCREEN_WIDTH * 0.4, SCREEN_HEIGHT * 0.6),
+            (SCREEN_WIDTH * 0.4, SCREEN_HEIGHT * 0.8),
+            (SCREEN_WIDTH * 0.6, SCREEN_HEIGHT * 0.8),
+            (SCREEN_WIDTH * 0.6, SCREEN_HEIGHT * 0.4),
+            (SCREEN_WIDTH * 0.8, SCREEN_HEIGHT * 0.4),
+            (SCREEN_WIDTH * 0.8, SCREEN_HEIGHT * 0.2),
             (SCREEN_WIDTH - 50, SCREEN_HEIGHT * 0.2)  # Кінець шляху
         ]
         
         # Точки для веж
         self.tower_spots = [
-            (SCREEN_WIDTH * 0.2, SCREEN_HEIGHT * 0.7),
-            (SCREEN_WIDTH * 0.4, SCREEN_HEIGHT * 0.7),
-            (SCREEN_WIDTH * 0.2, SCREEN_HEIGHT * 0.3),
-            (SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.3),
-            (SCREEN_WIDTH * 0.8, SCREEN_HEIGHT * 0.3),
+            (SCREEN_WIDTH * 0.1, SCREEN_HEIGHT * 0.75),
+            (SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.75),
+            (SCREEN_WIDTH * 0.2, SCREEN_HEIGHT * 0.5),
+            (SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.5),
+            (SCREEN_WIDTH * 0.7, SCREEN_HEIGHT * 0.7),
+            (SCREEN_WIDTH * 0.9, SCREEN_HEIGHT * 0.3),
+            (SCREEN_WIDTH * 0.7, SCREEN_HEIGHT * 0.2),
             (SCREEN_WIDTH * 0.8, SCREEN_HEIGHT * 0.1)
         ]
         
@@ -64,7 +70,7 @@ class Game:
         # self.ui_font_large = pygame.font.Font(None, int(48 * SCALE_FACTOR))  # Поки не потрібно
         
         # Гроші та вибрані об'єкти
-        self.money = 300
+        self.money = 500
         self.selected_tower = None
         self.selected_type = None
         self.game_time = 0
@@ -176,6 +182,10 @@ class Game:
         for spot in self.tower_spots:
             pygame.draw.circle(screen, GREEN, (int(spot[0]), int(spot[1])), 
                              int(20 * SCALE_FACTOR))
+            
+    def draw_map(self):
+        screen.blit(pygame.transform.scale(UI_IMAGES['map'], (SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0))
+
 
     def draw_top_ui(self):
         pygame.draw.rect(screen, GRAY, (0, 0, SCREEN_WIDTH, self.top_ui_height))
@@ -274,15 +284,15 @@ class Game:
             if tower.level < 3:
                 # Кнопка покращення
                 screen.blit(UI_IMAGES['upgrade_button'], self.upgrade_button)
-                upgrade_text = self.ui_font.render(f'Покращити ({tower.upgrade_cost})', True, WHITE)
-                text_rect = upgrade_text.get_rect(center=self.upgrade_button.center)
+                upgrade_text = self.ui_font_small.render(f'{tower.upgrade_cost}', True, WHITE)
+                text_rect = upgrade_text.get_rect(center=self.upgrade_button.bottomright)
                 screen.blit(upgrade_text, text_rect)
             
             # Кнопка продажу
             sell_price = int(tower.get_total_cost() * 0.8)
             screen.blit(UI_IMAGES['sell_button'], self.sell_button)
-            sell_text = self.ui_font.render(f'Продати ({sell_price})', True, WHITE)
-            text_rect = sell_text.get_rect(center=self.sell_button.center)
+            sell_text = self.ui_font_small.render(f'{sell_price}', True, WHITE)
+            text_rect = sell_text.get_rect(center=self.sell_button.bottomright)
             screen.blit(sell_text, text_rect)
         
         # Малюємо горизонтальне випливаюче меню улюbленців
@@ -358,7 +368,7 @@ class Game:
                     tower.last_shot = current_time
                     self.projectiles.append(
                         Projectile(tower.position, enemy.position, 
-                                 tower.properties['damage'])
+                                 tower.properties['damage'], projectile_type=tower.type)
                     )
         
         # Оновлюємо активного улюбленця
@@ -435,52 +445,41 @@ class Game:
         
         # Максимум 3 ворога одночасно
         # Максимальна кількість одночасних ворогів збільшується з рівнем
-        max_simultaneous = 3 + (self.level - 1) // 2  # Кожні 2 рівні +1 до максимуму
-        max_simultaneous = min(max_simultaneous, 10)   # Але не більше 10
+        max_simultaneous = 3 + (self.level - 1) // 3  # Кожні 3 рівні +1 до максимуму
+        max_simultaneous = min(max_simultaneous, 13)   # Але не більше 13
         
         # Перевіряємо чи не досягнуто ліміт
         if len(self.enemies) >= max_simultaneous:
             return
         
         # Вибір типу ворога залежно від рівня
-        r = random.random()
-        
-        if self.level < 3:
-            # Рівні 1-2: тільки звичайні вороги
-            enemy_type = 'normal'
-        elif self.level < 5:
-            # Рівні 3-4: звичайні та швидкі
-            enemy_type = 'fast' if r > 0.7 else 'normal'
-        elif self.level < 7:
-            # Рівні 5-6: звичайні, швидкі та танки
-            if r > 0.8:
-                enemy_type = 'tank'
-            elif r > 0.5:
-                enemy_type = 'fast'
-            else:
-                enemy_type = 'normal'
-        elif self.level < 10:
-            # Рівні 7-9: всі типи крім босса
-            if r > 0.8:
-                enemy_type = 'tank'
-            elif r > 0.6:
-                enemy_type = 'fast'
-            elif r > 0.4:
-                enemy_type = 'swarm'
-            else:
-                enemy_type = 'normal'
-        else:
-            # Рівень 10+: всі типи ворогів
-            if r > 0.9:
-                enemy_type = 'boss'
-            elif r > 0.7:
-                enemy_type = 'tank'
-            elif r > 0.5:
-                enemy_type = 'fast'
-            elif r > 0.3:
-                enemy_type = 'swarm'
-            else:
-                enemy_type = 'normal'
+        def _get_enemy_type(level):
+            enemies = ['enemy_lvl_1']
+
+            # Додаємо звичайних ворогів кожні 4 рівні (до enemy_lvl_6)
+            for i in range(2, min(level // 4 + 1, 7)):
+                enemies.append(f'enemy_lvl_{i}')
+
+            # Додаємо босів після 10, 15 та 20 рівня
+            if level >= 10:
+                enemies.append('boss_lvl_1')
+            if level >= 15:
+                enemies.append('boss_lvl_2')
+            if level >= 20:
+                enemies.append('boss_lvl_3')
+
+            # Генеруємо ймовірності для кожного типу ворога
+            base_probability = 0.2  # Ймовірність для звичайних ворогів
+            boss_probabilities = [0.05, 0.03, 0.02]  # Ймовірності для босів
+
+            # Ймовірності для всіх ворогів (крім босів)
+            probabilities = [base_probability] * (len(enemies) - len(boss_probabilities))
+
+            # Додаємо ймовірності босів (тільки якщо вони є в списку)
+            probabilities.extend(boss_probabilities[:len(enemies) - len(probabilities)])
+
+            return random.choices(enemies, probabilities, k=1)[0]
+        enemy_type: str = _get_enemy_type(self.level)
         
         self.enemies.append(Enemy(self.path_points, enemy_type))
         self.enemies_spawned += 1
@@ -553,7 +552,7 @@ class Game:
 
     def handle_enemy_reached_castle(self, enemy):
         # Віднімаємо здоров'я замку залежно від поточного здоров'я ворога
-        damage = enemy.health / 10  # 10% від поточного здоров'я ворога
+        damage = enemy.health   # 10% від поточного здоров'я ворога
         play_sound('castle_hit')  # Додаємо звук при влучанні в замок
         self.castle_health -= damage
         
@@ -807,10 +806,10 @@ class Game:
             if self.current_screen == 'menu':
                 self.menu.draw(screen)
             elif self.current_screen == 'game':
-                screen.fill(WHITE)
+                self.draw_map()
                 self.draw_top_ui()
-                self.draw_path()
-                self.draw_tower_spots()
+                # self.draw_path()
+                # self.draw_tower_spots()
                 self.draw_castle()
                 
                 for tower in self.towers:

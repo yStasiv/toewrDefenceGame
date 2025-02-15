@@ -9,28 +9,28 @@ def load_sound(path):
 # Завантажуємо всі звуки
 SOUNDS = {
     # Звуки веж
-    'tower_buy': load_sound('resources/sounds/tower_buy.wav'),
-    'tower_sell': load_sound('resources/sounds/tower_buy.wav'),
-    'tower_hit': load_sound('resources/sounds/tower_buy.wav'),
+    'tower_buy': load_sound('assets/sounds/tower_buy.wav'),
+    'tower_sell': load_sound('assets/sounds/tower_buy.wav'),
+    'tower_hit': load_sound('assets/sounds/tower_buy.wav'),
     
     # Звуки замку
-    'castle_hit': load_sound('resources/sounds/tower_buy.wav'),
+    'castle_hit': load_sound('assets/sounds/tower_buy.wav'),
     
     # Звуки монет
-    'coin_drop': load_sound('resources/sounds/tower_buy.wav'),
-    'coin_pickup': load_sound('resources/sounds/tower_buy.wav'),
+    'coin_drop': load_sound('assets/sounds/tower_buy.wav'),
+    'coin_pickup': load_sound('assets/sounds/tower_buy.wav'),
     
     # Звуки морквинок
-    'carrot_pickup': load_sound('resources/sounds/tower_buy.wav'),
-    'carrot_destroy': load_sound('resources/sounds/tower_buy.wav'),
+    'carrot_pickup': load_sound('assets/sounds/tower_buy.wav'),
+    'carrot_destroy': load_sound('assets/sounds/tower_buy.wav'),
     
     # Звуки рівнів
-    'level_complete': load_sound('resources/sounds/tower_buy.wav'),
-    'game_over': load_sound('resources/sounds/tower_buy.wav'),
+    'level_complete': load_sound('assets/sounds/tower_buy.wav'),
+    'game_over': load_sound('assets/sounds/tower_buy.wav'),
     
     # Інші звуки
-    'tower_place': load_sound('resources/sounds/tower_buy.wav'),
-    'menu_click': load_sound('resources/sounds/tower_buy.wav'),
+    'tower_place': load_sound('assets/sounds/tower_buy.wav'),
+    'menu_click': load_sound('assets/sounds/tower_buy.wav'),
 }
 
 # Налаштовуємо гучність для кожного звуку
@@ -73,8 +73,8 @@ def get_sound_state():
 
 # Фонова музика
 MUSIC = {
-    'menu': 'resources/sounds/music/menu_music.mp3',
-    'game': 'resources/sounds/music/game_music.mp3',
+    'menu': 'assets/sounds/music/menu_music.mp3',
+    'game': 'assets/sounds/music/game_music.mp3',
 }
 
 def play_music(music_name):
